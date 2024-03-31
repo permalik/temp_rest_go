@@ -36,7 +36,11 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v0/healthcheck", app.healthcheckHandler)
+	mux.HandleFunc("GET /", app.home)
+	mux.HandleFunc("GET /v0/healthcheck", app.healthcheck)
+	mux.HandleFunc("POST /v0/item", app.createItem)
+	mux.HandleFunc("GET /v0/items", app.readItems)
+	mux.HandleFunc("GET /v0/item/{id}", app.readItem)
 
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.port),

@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const version = "0.1.0"
+const version string = "0.1.0"
 
 type config struct {
 	port int

@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
+
+	"github.com/permalik/temp_rest_go/internal/data"
 )
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -10,12 +13,14 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) healthcheck(w http.ResponseWriter, r *http.Request) {
-	data := map[string]string{
-		"environment": app.config.env,
-		"status":      "available",
-		"version":     version,
+	data := wrap_json{
+		"status": "available",
+		"system_info": map[string]string{
+			"environment": app.config.Env,
+			"version":     "0.1.0",
+		},
 	}
-	err := app.wJson(w, http.StatusOK, data, nil)
+	err := app.w_json(w, http.StatusOK, data, nil, true)
 	if err != nil {
 		app.logger.Println(err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -23,19 +28,33 @@ func (app *application) healthcheck(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *application) createItem(w http.ResponseWriter, r *http.Request) {
+func (app *application) create_item(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "create item...")
 }
 
-func (app *application) readItems(w http.ResponseWriter, r *http.Request) {
+func (app *application) read_items(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "read items...")
 }
 
-func (app *application) readItem(w http.ResponseWriter, r *http.Request) {
-	id, err := app.parskey(r)
+func (app *application) read_item(w http.ResponseWriter, r *http.Request) {
+	id, err := app.parse_key(r)
 	if err != nil || id < 1 {
 		http.NotFound(w, r)
 		return
 	}
-	fmt.Fprintf(w, "read item %d...", id)
+
+	data := data.Item{
+		ID:        id,
+		Name:      "test_item",
+		Quantity:  12,
+		Pounds:    15,
+		Types:     []string{"primary", "secondary", "tertiary"},
+		CreatedAt: time.Now(),
+	}
+
+	err = app.w_json(w, http.StatusOK, wrap_json{"item": data}, nil, true)
+	if err != nil {
+		app.logger.Println(err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+	}
 }

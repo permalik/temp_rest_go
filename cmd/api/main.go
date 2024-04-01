@@ -33,16 +33,18 @@ func main() {
 		logger: logger,
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /", app.home)
-	mux.HandleFunc("GET /v0/healthcheck", app.healthcheck)
-	mux.HandleFunc("POST /v0/item", app.create_item)
-	mux.HandleFunc("GET /v0/items", app.read_items)
-	mux.HandleFunc("GET /v0/item/{id}", app.read_item)
+	var h http.Handler
+	r := http.NewServeMux()
+	r.HandleFunc("GET /v0/healthcheck", app.healthcheck)
+	r.HandleFunc("POST /v0/item", app.create_item)
+	r.HandleFunc("GET /v0/items", app.read_items)
+	r.HandleFunc("GET /v0/item/{id}", app.read_item)
+	r.HandleFunc("GET /", app.home)
+	h = r
 
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),
-		Handler:           mux,
+		Handler:           h,
 		IdleTimeout:       time.Minute,
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       10 * time.Second,

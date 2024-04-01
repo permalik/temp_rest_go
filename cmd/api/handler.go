@@ -9,6 +9,10 @@ import (
 )
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		app.err_res_notf(w, r)
+		return
+	}
 	fmt.Fprintln(w, "home...")
 }
 
@@ -17,19 +21,28 @@ func (app *application) healthcheck(w http.ResponseWriter, r *http.Request) {
 		"status": "available",
 		"system_info": map[string]string{
 			"environment": app.config.Env,
-			"version":     "0.1.0",
+			// TODO: convert version to env var
+			"version": "0.1.0",
 		},
 	}
 	err := app.w_json(w, http.StatusOK, data, nil, true)
 	if err != nil {
-		app.logger.Println(err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
+		app.err_res_int_srv(w, r, err)
 	}
 }
 
 func (app *application) create_item(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "create item...")
+	var input struct {
+		Name     string   `json:"name"`
+		Quantity int32    `json:"quantity"`
+		Pounds   int32    `json:"pounds"`
+		Types    []string `json:"types"`
+	}
+	err := app.r_json(w, r, &input)
+	if err != nil {
+		app.err_res_bad_req(w, r, err)
+	}
+	fmt.Fprintf(w, "%+v\n", input)
 }
 
 func (app *application) read_items(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +67,6 @@ func (app *application) read_item(w http.ResponseWriter, r *http.Request) {
 
 	err = app.w_json(w, http.StatusOK, wrap_json{"item": data}, nil, true)
 	if err != nil {
-		app.logger.Println(err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		app.srv_err_res(w, r, err)
 	}
 }

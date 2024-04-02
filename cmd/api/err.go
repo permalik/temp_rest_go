@@ -44,3 +44,8 @@ func (app *application) err_res_method_nota(w http.ResponseWriter, r *http.Reque
 func (app *application) err_res_bad_req(w http.ResponseWriter, r *http.Request, err error) {
 	app.err_res(w, r, http.StatusBadRequest, err.Error())
 }
+
+// error response: failed validation
+func (app *application) err_res_fail_val(w http.ResponseWriter, r *http.Request, errs map[string]string) {
+	app.err_res(w, r, http.StatusUnprocessableEntity, errs)
+}

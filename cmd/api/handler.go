@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/permalik/temp_rest_go/internal/data"
+	"github.com/permalik/temp_rest_go/internal/validator"
 )
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -33,15 +34,32 @@ func (app *application) healthcheck(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) create_item(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Name     string   `json:"name"`
-		Quantity int32    `json:"quantity"`
-		Pounds   int32    `json:"pounds"`
-		Types    []string `json:"types"`
+		Name     string      `json:"name"`
+		Year     int32       `json:"year"`
+		Quantity int32       `json:"quantity"`
+		Pounds   data.Pounds `json:"pounds"`
+		Types    []string    `json:"types"`
 	}
 	err := app.r_json(w, r, &input)
 	if err != nil {
 		app.err_res_bad_req(w, r, err)
 	}
+
+	i := &data.Item{
+		Name:     input.Name,
+		Year:     input.Year,
+		Quantity: input.Quantity,
+		Pounds:   input.Pounds,
+		Types:    input.Types,
+	}
+
+	v := validator.New()
+
+	if data.ValidateItem(v, i); !v.Valid() {
+		app.err_res_fail_val(w, r, v.Errors)
+		return
+	}
+
 	fmt.Fprintf(w, "%+v\n", input)
 }
 
@@ -59,6 +77,7 @@ func (app *application) read_item(w http.ResponseWriter, r *http.Request) {
 	data := data.Item{
 		ID:        id,
 		Name:      "test_item",
+		Year:      1986,
 		Quantity:  12,
 		Pounds:    15,
 		Types:     []string{"primary", "secondary", "tertiary"},
@@ -67,6 +86,6 @@ func (app *application) read_item(w http.ResponseWriter, r *http.Request) {
 
 	err = app.w_json(w, http.StatusOK, wrap_json{"item": data}, nil, true)
 	if err != nil {
-		app.srv_err_res(w, r, err)
+		app.err_res_int_srv(w, r, err)
 	}
 }

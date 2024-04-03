@@ -21,7 +21,7 @@ func (app *application) healthcheck(w http.ResponseWriter, r *http.Request) {
 	data := wrap_json{
 		"status": "available",
 		"system_info": map[string]string{
-			"environment": app.config.Env,
+			"environment": app.config.env,
 			// TODO: convert version to env var
 			"version": "0.1.0",
 		},

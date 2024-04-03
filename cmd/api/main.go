@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"log"
@@ -8,25 +10,41 @@ import (
 	"os"
 	"time"
 
-	"github.com/permalik/temp_rest_go/internal/data"
+	_ "github.com/lib/pq"
 )
 
+type config struct {
+	env  string
+	port int
+	db   struct {
+		dsn string
+	}
+}
+
 type application struct {
-	config data.AppConfig
+	config config
 	logger *log.Logger
 }
 
 func main() {
-	var cfg data.AppConfig
+	var cfg config
+
+	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
 	// TODO: envvar from flag, then .env, then default
 	// TODO: if containerized, then env
-	flag.StringVar(&cfg.Env, "env", "development", "Environment(development|staging|production)")
-	flag.IntVar(&cfg.Port, "port", 9000, "api server port")
+	flag.StringVar(&cfg.env, "env", "development", "Environment(development|staging|production)")
+	flag.IntVar(&cfg.port, "port", 9000, "api server port")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", "postgres://db:password@localhost/db", "PostgreSQL DSN")
 	flag.Parse()
-	cfg.Version = "0.1.0"
+	// version := "0.1.0"
 
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	db, err := db_open(cfg)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	defer db.Close()
+	logger.Printf("established db connection pool")
 
 	app := &application{
 		config: cfg,
@@ -43,7 +61,7 @@ func main() {
 	h = r
 
 	srv := &http.Server{
-		Addr:              fmt.Sprintf(":%d", cfg.Port),
+		Addr:              fmt.Sprintf(":%d", cfg.port),
 		Handler:           h,
 		IdleTimeout:       time.Minute,
 		ReadHeaderTimeout: 10 * time.Second,
@@ -51,7 +69,24 @@ func main() {
 		WriteTimeout:      30 * time.Second,
 	}
 
-	logger.Printf("\nestablish server connection\nenv: %s\naddr: %s", cfg.Env, srv.Addr)
-	err := srv.ListenAndServe()
+	logger.Printf("\nestablish server connection\nenv: %s\naddr: %s", cfg.env, srv.Addr)
+	err = srv.ListenAndServe()
 	logger.Fatal(err)
+}
+
+func db_open(cfg config) (*sql.DB, error) {
+	db, err := sql.Open("postgres", cfg.db.dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err = db.PingContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }

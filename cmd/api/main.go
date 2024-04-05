@@ -35,7 +35,13 @@ func main() {
 	// TODO: if containerized, then env
 	flag.StringVar(&cfg.env, "env", "development", "Environment(development|staging|production)")
 	flag.IntVar(&cfg.port, "port", 9000, "api server port")
-	flag.StringVar(&cfg.db.dsn, "db-dsn", "postgres://db:password@localhost/db", "PostgreSQL DSN")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("TEMP_REST_GO_DSN"), "PostgreSQL DSN")
+	// flag.StringVar(&cfg.db.dsn, "db-dsn", "host=localhost port=5432 user=au4 dbname=db sslmode=disable", "PostgreSQL DSN")
+	// TODO: update the above the utilize one or all of the below strategies as well if prudent
+	// flag.StringVar(&cfg.db.dsn, "db-dsn", "postgres://db:password@localhost/db", "PostgreSQL DSN")
+	// connStr := "host=%s port=%s user=%s dbname=%s sslmode=%s"
+	// Set each value dynamically w/ Sprintf
+	// connStr = fmt.Sprintf(connStr, host, port, user, dbname, sslmode)
 	flag.Parse()
 	// version := "0.1.0"
 
